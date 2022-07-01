@@ -112,7 +112,7 @@ else
             " Thanks Vimscript... you can use negative integers for strings
             " in the slice notation, but not for indexing characters :(
             let l:arglen = strlen(cmdarg)
-            if (cmdarg[0] == '"' && cmdarg[l:arglen - 1] == '"') || 
+            if (cmdarg[0] == '"' && cmdarg[l:arglen - 1] == '"') ||
                         \(cmdarg[0] == "'" && cmdarg[l:arglen - 1] == "'")
                 " This was quoted, so there are probably things to escape.
                 let l:escapedarg = cmdarg[1:-2] " substitute(cmdarg[1:-2], '\ ', '\\ ', 'g')
@@ -252,7 +252,7 @@ function! gutentags#setup_gutentags() abort
     "  other such things)
     " Also don't do anything for the default `[No Name]` buffer you get
     " after starting Vim.
-    if &buftype != '' || 
+    if &buftype != '' ||
           \(bufname('%') == '' && !g:gutentags_generate_on_empty_buffer)
         return
     endif
@@ -531,10 +531,10 @@ function! s:update_tags(bufno, module, write_mode, queue_mode) abort
                 endif
             endfor
             if l:needs_queuing
-                call add(s:update_queue[a:module], 
+                call add(s:update_queue[a:module],
                             \[l:tags_file, a:bufno, a:write_mode])
             endif
-            call gutentags#trace("Tag file '" . l:tags_file . 
+            call gutentags#trace("Tag file '" . l:tags_file .
                         \"' is already being updated. Queuing it up...")
         elseif a:queue_mode == 1
             call gutentags#trace("Tag file '" . l:tags_file .
@@ -625,7 +625,20 @@ endfunction
 if has('nvim')
     " Neovim job API.
     function! s:nvim_job_exit_wrapper(real_cb, job, exit_code, event_type) abort
-        call call(a:real_cb, [a:job, a:exit_code])
+		try
+			call call(a:real_cb, [a:job, a:exit_code])
+		catch /.*/
+			" Ignore any exceptions... Whenever I edit a file and exit too
+			" quickly, I get an annoying exception that hangs neovim for a
+			" couple of seconds.
+			"
+			" The issue is tracked here: https://github.com/ludovicchabant/vim-gutentags/issues/178
+			" The suggested workaround is to just disable gutentags for the
+			" file type that is causing you issues. I don't want to do that
+			" though, since I DO want to use gutentags with the file type
+			" that is causing me issues (right now usually Groovy or Python
+			" files)!!
+		endtry
     endfunction
 
     function! s:nvim_job_out_wrapper(real_cb, job, lines, event_type) abort
